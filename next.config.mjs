@@ -9,6 +9,12 @@ const nextConfig = {
         port: "",
         pathname: "/**", // Mengizinkan semua folder gambar di domain ini
       },
+      {
+        protocol: "https",
+        hostname: "res.cloudinary.com",
+        port: "",
+        pathname: "/**",
+      },
     ],
   },
 };

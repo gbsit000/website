@@ -116,10 +116,10 @@ export async function POST(request) {
       fileName = `${uniqueSuffix}${ext}`;
 
       // Buat folder fisik sesuai ID yang baru saja digenerate
-      // Path: public/images/item-category/[id]
+      // Path: public/images/categorie/[id]
       const uploadDir = path.join(
         process.cwd(),
-        `public/images/item-category/${newCategory.id}`,
+        `public/images/categorie/${newCategory.id}`,
       );
 
       if (!fs.existsSync(uploadDir)) {
