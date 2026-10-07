@@ -1,0 +1,77 @@
+.rte-wrapper .ck.ck-editor {
+  --rte-border: #d8d8dc;
+  display: flex;
+  flex-direction: column;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--rte-border);
+
+  /* ===== Override variabel tema CKEditor ===== */
+  /* Daftar lengkap variabel ada di node_modules/ckeditor5/dist/ckeditor5.css,
+     cari bagian ":root". Beberapa yang paling sering diubah: */
+  --ck-border-radius: 6px;
+  --ck-font-size-base: 14px;
+  --ck-color-base-border: #d8d8dc;
+
+  /* Warna aksen tombol aktif / toolbar item terpilih */
+  --ck-color-button-on-background: #eef2ff;
+  --ck-color-button-on-color: #4338ca;
+  --ck-color-button-on-hover-background: #e0e7ff;
+
+  /* Warna fokus saat elemen (link, gambar) dipilih */
+  --ck-color-focus-border: #4338ca;
+  --ck-color-focus-outer-shadow: rgba(67, 56, 202, 0.2);
+}
+
+.rte-wrapper .ck.ck-toolbar {
+  border: none;
+  border-bottom: 1px solid var(--rte-border);
+  background: #fafafa;
+  flex-wrap: wrap;
+}
+
+.rte-wrapper .ck.ck-content {
+  min-height: var(--rte-min-height, 300px);
+}
+
+.rte-wrapper .ck.ck-editor__editable {
+  padding: 0.75rem 1rem;
+}
+
+/* Styling heading/paragraph/list sekarang ditangani oleh class Tailwind
+   "prose" yang dipasang di wrapper (lihat proseClassName pada komponen).
+   Kalau tidak pakai Tailwind Typography, kembalikan override manual
+   seperti sebelumnya di sini. */
+
+.rte-wrapper
+  .ck.ck-editor__editable:not(.ck-editor__nested-editable).ck-focused {
+  border: none;
+  box-shadow: none;
+  outline: 2px solid #2563eb;
+  outline-offset: -2px;
+}
+
+/* Skeleton saat dynamic import masih memuat */
+.rte-skeleton {
+  border: 1px solid #d8d8dc;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.rte-skeleton-toolbar {
+  height: 42px;
+  background: #f0f0f2;
+  border-bottom: 1px solid #d8d8dc;
+}
+
+.rte-skeleton-body {
+  height: 300px;
+  background: repeating-linear-gradient(
+    90deg,
+    #f7f7f8,
+    #f7f7f8 40px,
+    #f0f0f2 40px,
+    #f0f0f2 80px
+  );
+  opacity: 0.5;
+}

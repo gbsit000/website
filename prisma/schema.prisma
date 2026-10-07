@@ -1,0 +1,147 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model brands {
+  id        Int      @id @default(autoincrement())
+  name      String?  @db.VarChar(255)
+  published Boolean?
+  createdAt DateTime @db.Date
+  updatedAt DateTime @db.Date
+}
+
+model categories {
+  id        Int      @id @default(autoincrement())
+  name      String?  @db.VarChar(255)
+  image     String?  @db.VarChar(255)
+  published Boolean?
+  createdAt DateTime @db.Date
+  updatedAt DateTime @db.Date
+}
+
+model images {
+  id        Int       @id @default(autoincrement())
+  name      String?   @db.VarChar(255)
+  productId Int?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  products  products? @relation(fields: [productId], references: [id], onDelete: Cascade, map: "images_ibfk_1")
+  @@index([productId], map: "images_ibfk_1")
+}
+
+model products {
+  id              Int      @id @default(autoincrement())
+  name            String?  @db.VarChar(255)
+  categorieId     Int?
+  brandId         Int?
+  description     String?  @db.Text
+  tag             String?  @db.VarChar(255)
+  metaDescription String?  @db.Text
+  metaKeywords    String?  @db.VarChar(255)
+  published       Boolean? @default(false)
+  createdAt  DateTime @default(now())
+  UpdatedAt DateTime @default(now()) @updatedAt
+  images          images[]
+  @@index([brandId], map: "brandId")
+  @@index([categorieId], map: "products_ibfk_1")
+}
+
+model clients {
+  id        Int       @id @default(autoincrement())
+  name      String?   @db.VarChar(255)
+  address   String?   @db.VarChar(255)
+  contact   String?   @db.VarChar(255)
+  email     String?   @db.VarChar(255)
+  createdAt  DateTime @default(now())
+  UpdatedAt DateTime @default(now()) @updatedAt
+}
+
+model vendors {
+  id        Int       @id @default(autoincrement())
+  name      String?   @db.VarChar(255)
+  address   String?   @db.VarChar(255)
+  contact   String?   @db.VarChar(255)
+  email     String?   @db.VarChar(255)
+  createdAt  DateTime @default(now())
+  UpdatedAt DateTime @default(now()) @updatedAt
+}
+
+
+model quotations {
+  id        Int       @id @default(autoincrement())
+  product   String?   @db.VarChar(255)
+  price     String?   @db.VarChar(255)
+  vendorId  Int?
+  date      DateTime? @db.Date
+  createdAt DateTime  @default(now())
+  UpdatedAt DateTime  @default(now()) @updatedAt
+  @@index([vendorId], map: "vendorId")
+}
+
+model employees {
+  id        Int      @id @default(autoincrement())
+  name      String?
+  email     String?
+  phone     String?
+  role_id   Int?     // Mengganti 'role String?' menjadi foreign key (Int)
+  published       Boolean? @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  roleData  roles?   @relation(fields: [role_id], references: [id])
+}
+
+model roles {
+  id        Int        @id @default(autoincrement())
+  role      String?
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  // Relasi balik (satu Role bisa dimiliki banyak Employes)
+  employees  employees[]
+  users     users[]
+}
+
+model users {
+  id        Int      @id @default(autoincrement())
+  name      String?  @db.VarChar(255)
+  username  String   @unique @db.VarChar(255)
+  email     String   @unique @db.VarChar(255)
+  password  String   @db.VarChar(255)
+  roleId    Int
+  role      roles    @relation(fields: [roleId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+} 
+
+model banners {
+  id          Int      @id @default(autoincrement())
+  title       String?
+  description String?
+  image       String   // Tambahkan kolom ini (wajib isi)
+  published   Boolean? @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model abouts {
+  id          Int      @id @default(autoincrement())
+  title       String?
+  phone       String?
+  address     String?
+  email       String?
+  description String? @db.Text
+  published   Boolean? @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model verification_tokens {
+  token      String   @id @db.VarChar(255)
+  identifier String   @db.VarChar(255)
+  expires    DateTime @db.DateTime(0)
+}
