@@ -171,7 +171,7 @@ export async function PUT(request, { params }) {
       where: { id: parseInt(id) },
       data: {
         ...productData,
-        // Prisma membuat baris baru di tabel images untuk URL gambar baru
+
         images: {
           create: uploadedImageRecords,
         },

@@ -33,10 +33,6 @@ export default function ProductDetail({ product }) {
     if (imageName.startsWith("http://") || imageName.startsWith("https://")) {
       return imageName;
     }
-
-    // 2. Jika path relatif lokal
-    const baseUrl = process.env.NEXT_PUBLIC_IMAGE_BASE_URL || "";
-    return `${baseUrl}/item/${product?.id}/${imageName}`;
   };
 
   return (

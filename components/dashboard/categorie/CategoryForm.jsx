@@ -18,6 +18,7 @@ export default function CategoryForm({ initialData, onSuccess }) {
           name: initialData.name,
           published: initialData.published,
         });
+        console.log(initialData.image);
 
         if (initialData.image) {
           setFileList([

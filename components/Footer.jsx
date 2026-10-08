@@ -20,7 +20,9 @@ export default async function Footer() {
               <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 font-bold text-white">
                 P
               </span>
-              <span className="text-xl font-bold text-white">PStore</span>
+              <span className="text-xl font-bold text-white">
+                TRIPLE RICH PRODUCTION
+              </span>
             </div>
             <p className="text-xs leading-relaxed text-gray-400">
               Penyedia solusi kebutuhan produk industri berkualitas tinggi

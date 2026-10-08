@@ -137,8 +137,8 @@ const CreateProductForm = () => {
       <Form.Item
         name="name"
         label="Nama Produk"
-        help={validate?.["name"]}
-        validateStatus={validate?.["name"] && "error"}
+        help={validate?.name}
+        validateStatus={validate?.name && "error"}
         hasFeedback
       >
         <Input placeholder="Masukkan nama produk" />
@@ -147,8 +147,8 @@ const CreateProductForm = () => {
       <Form.Item
         name="tag"
         label="Tag Produk"
-        help={validate?.["tag"]}
-        validateStatus={validate?.["tag"] && "error"}
+        help={validate?.tag}
+        validateStatus={validate?.tag && "error"}
         hasFeedback
       >
         <Input placeholder="Contoh: Elektronik, Diskon, Sepatu" />
@@ -161,11 +161,12 @@ const CreateProductForm = () => {
             name="categorieId"
             label="Kategori"
             style={{ flex: 1 }}
-            help={validate?.["categorieId"]}
-            validateStatus={validate?.["categorieId"] && "error"}
+            help={validate?.categorieId}
+            validateStatus={validate?.categorieId && "error"}
             hasFeedback
           >
             <Select
+              search
               showSearch={{
                 filterOption: (input, option) =>
                   (option?.label ?? "")
@@ -184,8 +185,8 @@ const CreateProductForm = () => {
             name="brandId"
             label="Brand"
             style={{ flex: 1 }}
-            help={validate?.["brandId"]}
-            validateStatus={validate?.["brandId"] && "error"}
+            help={validate?.brandId}
+            validateStatus={validate?.brandId && "error"}
             hasFeedback
           >
             <Select
@@ -203,8 +204,8 @@ const CreateProductForm = () => {
       <Form.Item
         name="description"
         label="Deskripsi Produk"
-        help={validate?.["description"]}
-        validateStatus={validate?.["description"] && "error"}
+        help={validate?.description}
+        validateStatus={validate?.description && "error"}
         hasFeedback
       >
         <RichTextEditor onChange={handleEditorChange} name="description" />
@@ -220,8 +221,8 @@ const CreateProductForm = () => {
 
       <Form.Item
         label="Gambar Produk"
-        help={validate?.["images"]}
-        validateStatus={validate?.["images"] && "error"}
+        help={validate?.images}
+        validateStatus={validate?.images && "error"}
         hasFeedback
       >
         <Upload
@@ -241,8 +242,8 @@ const CreateProductForm = () => {
       <Form.Item
         name="metaDescription"
         label="Meta Description (SEO)"
-        help={validate?.["metaDescription"]}
-        validateStatus={validate?.["metaDescription"] && "error"}
+        help={validate?.metaDescription}
+        validateStatus={validate?.metaDescription && "error"}
         hasFeedback
       >
         <TextArea
@@ -254,8 +255,8 @@ const CreateProductForm = () => {
       <Form.Item
         name="metaKeywords"
         label="Meta Keywords (SEO)"
-        help={validate?.["metaKeywords"]}
-        validateStatus={validate?.["metaKeywords"] && "error"}
+        help={validate?.metaKeywords}
+        validateStatus={validate?.metaKeywords && "error"}
         hasFeedback
       >
         <Input placeholder="Pisahkan kata kunci dengan koma (misal: sepatu, murah, lari)" />

@@ -22,7 +22,7 @@ const EditProductForm = ({ initialValues }) => {
   const [fileList, setFileList] = useState([]);
   const [select, setSelect] = useState({ brands: [], categories: [] }); // Set default object
   const [loading, setLoading] = useState(false);
-
+  const [validate, setValidate] = useState([]);
   // --- FUNGSI FETCH DATA BRAND & KATEGORI ---
   const getAllBrands = async () => {
     try {
@@ -103,12 +103,15 @@ const EditProductForm = ({ initialValues }) => {
         method: "PUT",
         body: formData, // Jangan set header Content-Type secara manual, biarkan browser mengaturnya untuk FormData
       });
+      const result = await response.json();
       if (response.ok) {
         message.success("Produk berhasil diperbarui!");
       } else {
-        message.error(response.error || "Gagal memperbarui produk.");
+        setValidate(result.error);
       }
     } catch (error) {
+      console.log(error);
+
       message.error("Terjadi kesalahan sistem.");
     } finally {
       setLoading(false);
@@ -144,11 +147,9 @@ const EditProductForm = ({ initialValues }) => {
             reject(false);
           }
         },
-        onCancel: () => reject(false),
       });
     });
   };
-  console.log(fileList);
 
   return (
     <Form
@@ -166,19 +167,34 @@ const EditProductForm = ({ initialValues }) => {
       <Form.Item
         name="name"
         label="Nama Produk"
-        rules={[{ required: true, message: "Nama produk wajib diisi" }]}
+        help={validate?.name}
+        validateStatus={validate?.name && "error"}
+        hasFeedback
       >
         <Input placeholder="Masukkan nama produk" />
       </Form.Item>
 
-      <Form.Item name="tag" label="Tag Produk">
+      <Form.Item
+        name="tag"
+        label="Tag Produk"
+        help={validate?.tag}
+        validateStatus={validate?.tag && "error"}
+        hasFeedback
+      >
         <Input placeholder="Contoh: Elekronik, Diskon, Sepatu" />
       </Form.Item>
 
       {/* --- FLEX LAYOUT PERSIS SEPERTI CREATE PRODUCT --- */}
       <Flex gap={12} vertical>
         <Flex gap={8}>
-          <Form.Item name="categorieId" label="Kategori" style={{ flex: 1 }}>
+          <Form.Item
+            name="categorieId"
+            label="Kategori"
+            style={{ flex: 1 }}
+            help={validate?.categorieId}
+            validateStatus={validate?.categorieId && "error"}
+            hasFeedback
+          >
             <Select
               showSearch={{
                 filterOption: (input, option) =>
@@ -194,7 +210,14 @@ const EditProductForm = ({ initialValues }) => {
             />
           </Form.Item>
 
-          <Form.Item name="brandId" label="Brand" style={{ flex: 1 }}>
+          <Form.Item
+            name="brandId"
+            label="Brand"
+            style={{ flex: 1 }}
+            help={validate?.brandId}
+            validateStatus={validate?.brandId && "error"}
+            hasFeedback
+          >
             <Select
               showSearch={{
                 filterOption: (input, option) =>
@@ -212,7 +235,13 @@ const EditProductForm = ({ initialValues }) => {
         </Flex>
       </Flex>
 
-      <Form.Item name="description" label="Deskripsi Produk">
+      <Form.Item
+        name="description"
+        label="Deskripsi Produk"
+        help={validate?.description}
+        validateStatus={validate?.description && "error"}
+        hasFeedback
+      >
         {/* <Markdown handleEditorChange={handleEditorChange} name="description" /> */}
         <RichTextEditor
           onChange={handleEditorChange}
@@ -229,7 +258,14 @@ const EditProductForm = ({ initialValues }) => {
         <Switch checkedChildren="Published" unCheckedChildren="Draft" />
       </Form.Item>
 
-      <Form.Item name="images" label="Gambar Produk" valuePropName="images">
+      <Form.Item
+        name="images"
+        label="Gambar Produk"
+        valuePropName="images"
+        help={validate?.images}
+        validateStatus={validate?.images && "error"}
+        hasFeedback
+      >
         <Upload
           listType="picture-card"
           fileList={fileList}
@@ -244,14 +280,26 @@ const EditProductForm = ({ initialValues }) => {
         </Upload>
       </Form.Item>
 
-      <Form.Item name="metaDescription" label="Meta Description (SEO)">
+      <Form.Item
+        name="metaDescription"
+        label="Meta Description (SEO)"
+        help={validate?.metaDescription}
+        validateStatus={validate?.metaDescription && "error"}
+        hasFeedback
+      >
         <TextArea
           rows={2}
           placeholder="Deskripsi ringkas untuk mesin pencari (Google)"
         />
       </Form.Item>
 
-      <Form.Item name="metaKeywords" label="Meta Keywords (SEO)">
+      <Form.Item
+        name="metaKeywords"
+        label="Meta Keywords (SEO)"
+        help={validate?.metaKeywords}
+        validateStatus={validate?.metaKeywords && "error"}
+        hasFeedback
+      >
         <Input placeholder="Pisahkan kata kunci dengan koma (misal: sepatu, murah, lari)" />
       </Form.Item>
 

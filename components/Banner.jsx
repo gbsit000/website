@@ -18,10 +18,6 @@ export default async function Banner() {
     if (imageName.startsWith("http://") || imageName.startsWith("https://")) {
       return imageName;
     }
-
-    // 2. Jika file lokal lama
-    const baseUrl = process.env.IMAGE_BASE_URL || "";
-    return `${baseUrl}/banners/${imageName}`;
   };
 
   return (

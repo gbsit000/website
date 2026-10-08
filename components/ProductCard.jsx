@@ -18,10 +18,6 @@ export default function ProductCard({ product }) {
     if (imageName.startsWith("http://") || imageName.startsWith("https://")) {
       return imageName;
     }
-
-    // 3. Jika masih berupa file lokal lama
-    const baseUrl = process.env.NEXT_PUBLIC_IMAGE_BASE_URL || "";
-    return `${baseUrl}/item/${productId}/${imageName}`;
   };
 
   const imageUrl = getProductImageUrl(primaryImage, product?.id);
