@@ -7,7 +7,6 @@ export async function generateMetadata({ params }) {
   const { data } = await response.json();
   // Ambil URL gambar pertama untuk Open Graph preview
   const primaryImage = data.images?.[0];
-  const imageUrl = `${process.env.IMAGE_BASE_URL}${id}/${primaryImage?.name}`;
   // Bersihkan meta description (gunakan metaDescription jika ada, fallback ke description)
   const rawDescription = data.metaDescription || data.description;
 
@@ -22,7 +21,7 @@ export async function generateMetadata({ params }) {
       type: "article",
       images: [
         {
-          url: imageUrl,
+          url: primaryImage.name,
           width: 800,
           height: 800,
           alt: data.name,
@@ -35,7 +34,7 @@ export async function generateMetadata({ params }) {
       card: "summary_large_image",
       title: data.name,
       description: rawDescription,
-      images: [imageUrl],
+      images: [primaryImage.name],
     },
   };
 }
