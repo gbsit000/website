@@ -105,8 +105,7 @@ const CreateProductForm = () => {
         body: formData, // Tanpa header Content-Type, browser yang akan mengaturnya
       });
       const response = await resutlt.json();
-
-      if (response.success) {
+      if (resutlt.ok) {
         message.success("Produk berhasil ditambahkan!");
         form.resetFields(); // Kosongkan form setelah sukses
         setFileList([]); // Kosongkan daftar gambar

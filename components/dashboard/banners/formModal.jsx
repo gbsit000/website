@@ -28,7 +28,7 @@ const FormModal = ({ isOpen, onClose, initialData, refreshData }) => {
               uid: "-1",
               name: initialData.image,
               status: "done",
-              url: `${process.env.NEXT_PUBLIC_IMAGE_BASE_URL}/banners/${initialData.image}`, // Pastikan path ini sesuai dengan folder public Anda
+              url: initialData.image,
             },
           ]);
         } else {

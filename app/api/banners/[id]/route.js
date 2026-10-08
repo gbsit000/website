@@ -1,8 +1,33 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { bannerValidation } from "@/validation/bannerValidation";
-import fs from "fs";
-import path from "path";
+import { v2 as cloudinary } from "cloudinary";
+
+// Konfigurasi Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+// Helper untuk mengekstrak public_id dari URL Cloudinary
+// Contoh URL: https://res.cloudinary.com/.../upload/v1234/banners/sample.jpg
+// Hasil public_id: "banners/sample"
+const getCloudinaryPublicId = (url) => {
+  if (!url || !url.includes("res.cloudinary.com")) return null;
+  const parts = url.split("/");
+  const uploadIndex = parts.indexOf("upload");
+  if (uploadIndex === -1) return null;
+
+  // Ambil bagian path setelah versi (v1234567)
+  const pathAfterUpload = parts.slice(uploadIndex + 1);
+  if (pathAfterUpload[0].startsWith("v")) {
+    pathAfterUpload.shift(); // hapus v1234567
+  }
+
+  const fullPath = pathAfterUpload.join("/"); // misal: "banners/sample.jpg"
+  return fullPath.substring(0, fullPath.lastIndexOf(".")); // hapus ekstensi file (.jpg, .png, dll)
+};
 
 export async function PUT(request, { params }) {
   try {
@@ -14,10 +39,10 @@ export async function PUT(request, { params }) {
     const title = formData.get("title");
     const description = formData.get("description");
     const published = formData.get("published") === "true";
-    const deleteImage = formData.get("deleteImage") === "true"; // Tangkap sinyal hapus
+    const deleteImage = formData.get("deleteImage") === "true";
     const imageFile = formData.get("image");
 
-    // 2. Persiapkan validasi (Abaikan image jika tidak ada gambar baru)
+    // 2. Persiapkan validasi
     let imageForValidation = undefined;
     if (imageFile && typeof imageFile === "object" && imageFile.size > 0) {
       imageForValidation = {
@@ -46,45 +71,44 @@ export async function PUT(request, { params }) {
 
     const dataToUpdate = { title, description, published };
 
-    // 3. Cari data banner lama untuk mendapatkan nama file
+    // 3. Cari data banner lama
     const existingBanner = await prisma.banners.findUnique({
       where: { id: bannerId },
     });
 
-    // 4. HAPUS FILE FISIK jika ada gambar baru ATAU user sengaja menghapus gambar
+    const hasNewImage =
+      imageFile && typeof imageFile === "object" && imageFile.size > 0;
+
+    // 4. HAPUS GAMBAR LAMA DI CLOUDINARY jika ada gambar baru ATAU user hapus gambar
     if (
       existingBanner &&
       existingBanner.image &&
-      (deleteImage || (imageFile && imageFile.size > 0))
+      (deleteImage || hasNewImage)
     ) {
-      const oldImagePath = path.join(
-        process.cwd(),
-        "public/images/banners",
-        existingBanner.image,
-      );
-      if (fs.existsSync(oldImagePath)) {
-        fs.unlinkSync(oldImagePath); // File lokal dihapus di sini
+      const publicId = getCloudinaryPublicId(existingBanner.image);
+      if (publicId) {
+        await cloudinary.uploader.destroy(publicId);
       }
     }
 
-    // 5. Tulis file gambar baru (jika ada) ke lokal
-    if (imageFile && typeof imageFile === "object" && imageFile.size > 0) {
-      const uploadDir = path.join(process.cwd(), "public/images/banners");
-      if (!fs.existsSync(uploadDir))
-        fs.mkdirSync(uploadDir, { recursive: true });
-
-      const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-      const ext = path.extname(imageFile.name);
-      const fileName = `${uniqueSuffix}${ext}`;
-      const filePath = path.join(uploadDir, fileName);
-
+    // 5. UPLOAD GAMBAR BARU KE CLOUDINARY (jika ada)
+    if (hasNewImage) {
       const bytes = await imageFile.arrayBuffer();
       const buffer = Buffer.from(bytes);
-      fs.writeFileSync(filePath, buffer);
 
-      dataToUpdate.image = fileName;
+      const uploadResult = await new Promise((resolve, reject) => {
+        const uploadStream = cloudinary.uploader.upload_stream(
+          { folder: "banners" },
+          (err, result) => {
+            if (err) reject(err);
+            else resolve(result);
+          },
+        );
+        uploadStream.end(buffer);
+      });
+
+      dataToUpdate.image = uploadResult.secure_url;
     } else if (deleteImage) {
-      // Jika dihapus tanpa upload baru, kosongkan string di database
       dataToUpdate.image = "";
     }
 
@@ -99,7 +123,10 @@ export async function PUT(request, { params }) {
       { status: 200 },
     );
   } catch (error) {
-    return NextResponse.json({ error: error }, { status: 500 });
+    return NextResponse.json(
+      { error: error.message || error },
+      { status: 500 },
+    );
   }
 }
 
@@ -119,15 +146,11 @@ export async function DELETE(request, { params }) {
       );
     }
 
-    // Hapus file fisik dari folder lokal saat tombol "Delete Banner" ditekan
+    // Hapus file dari Cloudinary saat banner dihapus
     if (existingBanner.image) {
-      const imagePath = path.join(
-        process.cwd(),
-        "public/images/banners",
-        existingBanner.image,
-      );
-      if (fs.existsSync(imagePath)) {
-        fs.unlinkSync(imagePath);
+      const publicId = getCloudinaryPublicId(existingBanner.image);
+      if (publicId) {
+        await cloudinary.uploader.destroy(publicId);
       }
     }
 
@@ -140,6 +163,9 @@ export async function DELETE(request, { params }) {
       { status: 200 },
     );
   } catch (error) {
-    return NextResponse.json({ error: error }, { status: 500 });
+    return NextResponse.json(
+      { error: error.message || error },
+      { status: 500 },
+    );
   }
 }

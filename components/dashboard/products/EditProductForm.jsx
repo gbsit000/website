@@ -68,7 +68,7 @@ const EditProductForm = ({ initialValues }) => {
         id: image.id,
         name: initialValues.name,
         status: "done",
-        url: `${process.env.NEXT_PUBLIC_IMAGE_BASE_URL}/item/${initialValues.id}/${image.name}`,
+        url: image.name,
       }));
       setFileList(initialFileList);
     }

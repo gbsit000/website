@@ -21,6 +21,6 @@ export default withAuth(
 // Tentukan rute mana saja yang mau dilindungi
 export const config = {
   matcher: [
-    // "/dashboard/:path*",  // Melindungi semua rute di dalam folder dashboard
+    "/dashboard/:path*", // Melindungi semua rute di dalam folder dashboard
   ],
 };
