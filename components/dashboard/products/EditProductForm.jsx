@@ -106,6 +106,16 @@ const EditProductForm = ({ initialValues }) => {
       const result = await response.json();
       if (response.ok) {
         message.success("Produk berhasil diperbarui!");
+
+        if (result.data && result.data.images) {
+          const updatedFileList = result.data.images.map((image) => ({
+            id: image.id,
+            name: values.name,
+            status: "done",
+            url: image.name, // image.name di backend menyimpan URL Cloudinary lengkap
+          }));
+          setFileList(updatedFileList);
+        }
       } else {
         setValidate(result.error);
       }

@@ -166,7 +166,6 @@ const CreateProductForm = () => {
             hasFeedback
           >
             <Select
-              search
               showSearch={{
                 filterOption: (input, option) =>
                   (option?.label ?? "")
