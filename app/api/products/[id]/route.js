@@ -176,6 +176,9 @@ export async function PUT(request, { params }) {
           create: uploadedImageRecords,
         },
       },
+      include: {
+        images: { select: { id: true, name: true } }, // agar frontend dapat daftar gambar terbaru
+      },
     });
 
     return NextResponse.json(

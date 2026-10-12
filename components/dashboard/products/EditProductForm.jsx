@@ -17,6 +17,16 @@ import { PlusOutlined } from "@ant-design/icons";
 import RichTextEditor from "@/components/editor/RichTextEditor";
 const { TextArea } = Input;
 
+// Helper mapping gambar dari server -> fileList Antd Upload (konsisten, dengan uid)
+const mapImagesToFileList = (images, productName) =>
+  (images || []).map((image) => ({
+    uid: String(image.id), // identitas unik untuk Antd Upload
+    id: image.id,
+    name: productName,
+    status: "done",
+    url: image.name,
+  }));
+
 const EditProductForm = ({ initialValues }) => {
   const [form] = Form.useForm();
   const [fileList, setFileList] = useState([]);
@@ -63,18 +73,15 @@ const EditProductForm = ({ initialValues }) => {
     });
 
     // Set gambar awal dari initialValues
-    if (initialValues && initialValues.images) {
-      const initialFileList = initialValues.images.map((image) => ({
-        id: image.id,
-        name: initialValues.name,
-        status: "done",
-        url: image.name,
-      }));
-      setFileList(initialFileList);
+    if (initialValues?.images) {
+      setFileList(
+        mapImagesToFileList(initialValues.images, initialValues.name),
+      );
     }
   }, [initialValues]);
 
   const onFinish = async (values) => {
+    if (loading) return; // cegah double submit
     setLoading(true);
     const formData = new FormData();
 
@@ -106,16 +113,10 @@ const EditProductForm = ({ initialValues }) => {
       const result = await response.json();
       if (response.ok) {
         message.success("Produk berhasil diperbarui!");
+        setValidate([]);
 
-        if (result.data && result.data.images) {
-          const updatedFileList = result.data.images.map((image) => ({
-            id: image.id,
-            name: values.name,
-            status: "done",
-            url: image.name, // image.name di backend menyimpan URL Cloudinary lengkap
-          }));
-          setFileList(updatedFileList);
-        }
+        // GANTI total fileList dengan data dari server (semua berupa url, tanpa originFileObj)
+        setFileList(mapImagesToFileList(result.data?.images, values.name));
       } else {
         setValidate(result.error);
       }
@@ -269,12 +270,9 @@ const EditProductForm = ({ initialValues }) => {
       </Form.Item>
 
       <Form.Item
-        name="images"
         label="Gambar Produk"
-        valuePropName="images"
         help={validate?.images}
         validateStatus={validate?.images && "error"}
-        hasFeedback
       >
         <Upload
           listType="picture-card"
