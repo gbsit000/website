@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidateTag, unstable_cache } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { productValidation } from "@/validation/productValidation";
 import { v2 as cloudinary } from "cloudinary";
@@ -8,6 +9,56 @@ cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+// Query daftar produk (dipisah supaya bisa dibungkus cache)
+async function fetchProducts({ query, categoryId, page, limit, isDashboard }) {
+  const skip = (page - 1) * limit;
+
+  const queryCondition = {};
+  if (categoryId && categoryId !== "all") {
+    queryCondition.categorieId = parseInt(categoryId);
+  }
+
+  const whereCondition = {
+    name: {
+      contains: query,
+    },
+    ...queryCondition,
+  };
+
+  if (!isDashboard) {
+    whereCondition.published = true;
+  }
+
+  const [products, totalProduct] = await prisma.$transaction([
+    prisma.products.findMany({
+      where: whereCondition,
+      skip: skip,
+      take: limit,
+      orderBy: { createdAt: "desc" },
+      include: {
+        images: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    }),
+    prisma.products.count({
+      where: whereCondition,
+    }),
+  ]);
+
+  return { products, totalProduct, page, limit };
+}
+
+// Versi ber-cache: disimpan 5 menit, atau sampai revalidateTag("products") dipanggil.
+// Parameter fungsi otomatis ikut menjadi bagian key cache (kategori, halaman, dll).
+const getCachedProducts = unstable_cache(fetchProducts, ["products-list"], {
+  tags: ["products"],
+  revalidate: 300,
 });
 
 // GET: /api/Products
@@ -21,50 +72,17 @@ export async function GET(request) {
 
     const page = parseInt(searchParams.get("page") || "1", 10);
     const limit = parseInt(searchParams.get("limit") || "20", 10);
-    const skip = (page - 1) * limit;
 
-    const queryCondition = {};
-    if (categoryId && categoryId !== "all") {
-      queryCondition.categorieId = parseInt(categoryId);
-    }
+    const params = { query, categoryId, page, limit, isDashboard };
 
-    const whereCondition = {
-      name: {
-        contains: query,
-      },
-      ...queryCondition,
-    };
+    // Dashboard dan pencarian selalu ambil data langsung (harus terbaru / terlalu beragam).
+    // Daftar produk publik tanpa pencarian dilayani dari cache.
+    const data =
+      isDashboard || query
+        ? await fetchProducts(params)
+        : await getCachedProducts(params);
 
-    if (!isDashboard) {
-      whereCondition.published = true;
-    }
-
-    const [products, totalProduct] = await prisma.$transaction([
-      prisma.products.findMany({
-        where: whereCondition,
-        skip: skip,
-        take: limit,
-        orderBy: { createdAt: "desc" },
-        include: {
-          images: {
-            select: {
-              id: true,
-              name: true,
-            },
-          },
-        },
-      }),
-      prisma.products.count({
-        where: whereCondition,
-      }),
-    ]);
-
-    return NextResponse.json({
-      products,
-      totalProduct,
-      page,
-      limit,
-    });
+    return NextResponse.json(data);
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
@@ -162,6 +180,9 @@ export async function POST(request) {
         data: imageRecords,
       });
     }
+
+    // Data berubah -> hapus cache daftar produk agar produk baru langsung muncul
+    revalidateTag("products");
 
     return NextResponse.json(
       { message: "Produk berhasil dibuat", data: newProduct },

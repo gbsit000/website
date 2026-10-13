@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { productValidation } from "@/validation/productValidation";
 import { v2 as cloudinary } from "cloudinary";
@@ -181,6 +182,9 @@ export async function PUT(request, { params }) {
       },
     });
 
+    // Data produk berubah -> hapus cache daftar produk
+    revalidateTag("products");
+
     return NextResponse.json(
       { message: "Sukses", data: updatedProduct },
       { status: 200 },
@@ -235,6 +239,9 @@ export async function DELETE(request, { params }) {
     await prisma.products.delete({
       where: { id: productId },
     });
+
+    // Produk terhapus -> hapus cache daftar produk
+    revalidateTag("products");
 
     return NextResponse.json(
       { message: "Produk beserta semua gambarnya berhasil dihapus total!" },

@@ -1,9 +1,48 @@
 import { NextResponse } from "next/server";
+import { revalidateTag, unstable_cache } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { categorieValidation } from "@/validation/categorieValidation";
+import { v2 as cloudinary } from "cloudinary";
 
-import fs from "fs";
-import path from "path";
+// Konfigurasi Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+// Query daftar kategori (dipisah supaya bisa dibungkus cache)
+async function fetchCategories({ query, page, limit, isDashboard }) {
+  const skip = (page - 1) * limit;
+
+  const whereCondition = {
+    name: { contains: query },
+  };
+  if (!isDashboard) {
+    whereCondition.published = true;
+  }
+
+  const [categories, total] = await prisma.$transaction([
+    prisma.categories.findMany({
+      where: whereCondition,
+      skip: skip,
+      take: limit,
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.categories.count({
+      where: whereCondition,
+    }),
+  ]);
+
+  return { data: categories, total: total };
+}
+
+// Versi ber-cache: disimpan 1 jam, atau sampai revalidateTag("categories") dipanggil.
+const getCachedCategories = unstable_cache(
+  fetchCategories,
+  ["categories-list"],
+  { tags: ["categories"], revalidate: 3600 },
+);
 
 // ==========================================
 // 1. GET: Mengambil Data Kategori (dengan Search & Pagination)
@@ -15,38 +54,26 @@ export async function GET(request) {
     const query = searchParams.get("q") || "";
     const page = parseInt(searchParams.get("page")) || 1;
     const limit = parseInt(searchParams.get("limit")) || 20;
-    const skip = (page - 1) * limit;
 
-    const whereCondition = {
-      name: { contains: query },
-    };
-    if (!isDashboard) {
-      whereCondition.published = true;
-    }
-    const [categories, total] = await prisma.$transaction([
-      prisma.categories.findMany({
-        where: whereCondition,
-        skip: skip,
-        take: limit,
-        orderBy: { createdAt: "desc" },
-      }),
-      prisma.categories.count({
-        where: whereCondition,
-      }),
-    ]);
+    const params = { query, page, limit, isDashboard };
 
-    return NextResponse.json(
-      { data: categories, total: total },
-      { status: 200 },
-    );
+    const result =
+      isDashboard || query
+        ? await fetchCategories(params)
+        : await getCachedCategories(params);
+
+    return NextResponse.json(result, { status: 200 });
   } catch (error) {
     console.log("Error fetching categories:", error);
-    return NextResponse.json({ error: error }, { status: 500 });
+    return NextResponse.json(
+      { error: error.message || error },
+      { status: 500 },
+    );
   }
 }
 
 // ==========================================
-// 2. POST: Membuat Kategori & Upload Gambar
+// 2. POST: Membuat Kategori & Upload Gambar ke Cloudinary
 // ==========================================
 export async function POST(request) {
   try {
@@ -56,7 +83,7 @@ export async function POST(request) {
     const published = formData.get("published") === "true";
     const name = formData.get("name");
 
-    // 1. Ambil HANYA SATU file menggunakan .get (bukan .getAll)
+    // 1. Ambil HANYA SATU file menggunakan .get
     const imageFile = formData.get("image");
     let imageForValidation;
 
@@ -69,18 +96,16 @@ export async function POST(request) {
       };
     }
 
-    // 3. Susun body (Pastikan key-nya 'image', bukan 'images')
+    // 3. Susun body untuk validasi
     const body = {
       name: name,
       image: imageForValidation,
     };
-    // 4. Validasi
+
+    // 4. Validasi menggunakan Joi
     const { error } = categorieValidation(body);
-    const formattedErrors = {};
-
     if (error) {
-      // Ubah error Joi menjadi object biasa agar bisa dikirim ke frontend
-
+      const formattedErrors = {};
       error.details.forEach((detail) => {
         formattedErrors[detail.path[0]] = detail.message;
       });
@@ -92,50 +117,42 @@ export async function POST(request) {
         { status: 422 },
       );
     }
-    // TAHAP 1: Insert ke database HANYA data teks untuk mendapatkan ID
+
+    // TAHAP 1: Insert ke database HANYA data teks terlebih dahulu untuk mendapatkan ID kategori
     const newCategory = await prisma.categories.create({
       data: {
         name: name,
         published: published,
-        // Wajib diisi manual karena schema Anda tidak memiliki @default(now())
         createdAt: new Date(),
         updatedAt: new Date(),
       },
     });
 
-    let fileName = null;
+    let imageUrl = null;
 
-    // TAHAP 2: Jika user mengupload gambar, buat folder dan simpan file
-    if (imageFile && typeof imageFile === "object" && imageFile.name) {
+    // TAHAP 2: Jika user mengupload gambar, upload ke Cloudinary ke folder khusus kategori
+    if (imageFile && typeof imageFile === "object" && imageFile.size > 0) {
       const bytes = await imageFile.arrayBuffer();
       const buffer = Buffer.from(bytes);
 
-      // Buat nama file unik
-      const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-      const ext = path.extname(imageFile.name);
-      fileName = `${uniqueSuffix}${ext}`;
+      // Upload menggunakan stream ke Cloudinary
+      imageUrl = await new Promise((resolve, reject) => {
+        const uploadStream = cloudinary.uploader.upload_stream(
+          { folder: `categorie/${newCategory.id}` },
+          (err, result) => {
+            if (err) reject(err);
+            else resolve(result.secure_url);
+          },
+        );
+        uploadStream.end(buffer);
+      });
 
-      // Buat folder fisik sesuai ID yang baru saja digenerate
-      // Path: public/images/categorie/[id]
-      const uploadDir = path.join(
-        process.cwd(),
-        `public/images/categorie/${newCategory.id}`,
-      );
-
-      if (!fs.existsSync(uploadDir)) {
-        fs.mkdirSync(uploadDir, { recursive: true });
-      }
-
-      // Tulis file fisik ke dalam folder tersebut
-      const filePath = path.join(uploadDir, fileName);
-      fs.writeFileSync(filePath, buffer);
-
-      // Update baris database tadi dengan memasukkan nama file gambar
+      // Update baris database dengan menyimpan URL lengkap dari Cloudinary pada kolom 'image'
       await prisma.categories.update({
         where: { id: newCategory.id },
         data: {
-          image: fileName,
-          updatedAt: new Date(), // Update waktu
+          image: imageUrl,
+          updatedAt: new Date(),
         },
       });
     }
@@ -145,11 +162,15 @@ export async function POST(request) {
       where: { id: newCategory.id },
     });
 
+    // Data berubah -> hapus cache daftar kategori
+    revalidateTag("categories");
+
     return NextResponse.json(
       { message: "Kategori berhasil dibuat", data: finalCategory },
       { status: 201 },
     );
   } catch (error) {
+    console.error("Error creating category:", error);
     return NextResponse.json(
       { error: "Internal Server Error", details: error.message },
       { status: 500 },

@@ -1,7 +1,30 @@
 import { NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import fs from "fs";
-import path from "path";
+import { v2 as cloudinary } from "cloudinary";
+
+// Konfigurasi Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+// Helper untuk mengekstrak public_id dari URL Cloudinary
+const getCloudinaryPublicId = (url) => {
+  if (!url || !url.includes("res.cloudinary.com")) return null;
+  const parts = url.split("/");
+  const uploadIndex = parts.indexOf("upload");
+  if (uploadIndex === -1) return null;
+
+  const pathAfterUpload = parts.slice(uploadIndex + 1);
+  if (pathAfterUpload[0].startsWith("v")) {
+    pathAfterUpload.shift();
+  }
+
+  const fullPath = pathAfterUpload.join("/");
+  return fullPath.substring(0, fullPath.lastIndexOf("."));
+};
 
 export async function GET(request, { params }) {
   try {
@@ -52,51 +75,45 @@ export async function PUT(request, { params }) {
       );
     }
 
-    let newImageName = existingCategory.image;
-    const uploadDir = path.join(
-      process.cwd(),
-      `public/images/item-category/${categoryId}`,
-    );
+    let newImageUrl = existingCategory.image;
 
-    // 3. Logika penanganan file fisik gambar
-    if (imageFile && typeof imageFile === "object" && imageFile.name) {
+    // 3. Logika penanganan gambar Cloudinary
+    if (imageFile && typeof imageFile === "object" && imageFile.size > 0) {
       // SKENARIO A: User mengunggah gambar baru
 
-      // Hapus gambar lama secara fisik (jika sebelumnya punya gambar)
+      // Hapus gambar lama dari Cloudinary jika ada
       if (existingCategory.image) {
-        const oldImagePath = path.join(uploadDir, existingCategory.image);
-        if (fs.existsSync(oldImagePath)) {
-          fs.unlinkSync(oldImagePath);
+        const publicId = getCloudinaryPublicId(existingCategory.image);
+        if (publicId) {
+          await cloudinary.uploader.destroy(publicId);
         }
       }
 
-      // Pastikan folder ada
-      if (!fs.existsSync(uploadDir)) {
-        fs.mkdirSync(uploadDir, { recursive: true });
-      }
-
-      // Generate nama file baru & simpan
+      // Upload gambar baru ke Cloudinary
       const bytes = await imageFile.arrayBuffer();
       const buffer = Buffer.from(bytes);
-      const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-      const ext = path.extname(imageFile.name);
 
-      newImageName = `${uniqueSuffix}${ext}`;
-      const newFilePath = path.join(uploadDir, newImageName);
-
-      fs.writeFileSync(newFilePath, buffer);
+      newImageUrl = await new Promise((resolve, reject) => {
+        const uploadStream = cloudinary.uploader.upload_stream(
+          { folder: `categories/${categoryId}` },
+          (err, result) => {
+            if (err) reject(err);
+            else resolve(result.secure_url);
+          },
+        );
+        uploadStream.end(buffer);
+      });
     } else if (deleteImage) {
       // SKENARIO B: User menghapus gambar di form tanpa mengupload yang baru
 
       if (existingCategory.image) {
-        const oldImagePath = path.join(uploadDir, existingCategory.image);
-        if (fs.existsSync(oldImagePath)) {
-          fs.unlinkSync(oldImagePath);
+        const publicId = getCloudinaryPublicId(existingCategory.image);
+        if (publicId) {
+          await cloudinary.uploader.destroy(publicId);
         }
       }
 
-      // Kosongkan nama gambar untuk database
-      newImageName = null;
+      newImageUrl = null;
     }
 
     // 4. Update data ke database Prisma
@@ -105,10 +122,13 @@ export async function PUT(request, { params }) {
       data: {
         name: name,
         published: published,
-        image: newImageName, // Bisa berisi nama file baru, null, atau tetap nama lama
+        image: newImageUrl, // Berisi URL Cloudinary baru, null, atau tetap URL lama
         updatedAt: new Date(),
       },
     });
+
+    // Data berubah -> hapus cache daftar kategori
+    revalidateTag("categories");
 
     return NextResponse.json(
       { message: "Kategori berhasil diperbarui", data: updatedCategory },
@@ -130,6 +150,7 @@ export async function DELETE(request, { params }) {
     const existingCategory = await prisma.categories.findUnique({
       where: { id: categoryId },
     });
+
     if (!existingCategory) {
       return NextResponse.json(
         { error: "Kategori tidak ditemukan" },
@@ -137,25 +158,27 @@ export async function DELETE(request, { params }) {
       );
     }
 
-    // Hapus paksa folder ID beserta isinya
-    const uploadDir = path.join(
-      process.cwd(),
-      `public/images/item-category/${categoryId}`,
-    );
-    if (fs.existsSync(uploadDir)) {
-      fs.rmSync(uploadDir, { recursive: true, force: true });
+    // 1. Hapus gambar dari Cloudinary jika ada
+    if (existingCategory.image) {
+      const publicId = getCloudinaryPublicId(existingCategory.image);
+      if (publicId) {
+        await cloudinary.uploader.destroy(publicId);
+      }
     }
 
-    // Hapus data dari DB
+    // 2. Hapus data dari DB
     await prisma.categories.delete({ where: { id: categoryId } });
 
+    // Kategori terhapus -> hapus cache daftar kategori
+    revalidateTag("categories");
+
     return NextResponse.json(
-      { message: "Kategori dan gambar terhapus" },
+      { message: "Kategori dan gambar berhasil dihapus" },
       { status: 200 },
     );
   } catch (error) {
     return NextResponse.json(
-      { error: "Internal Server Error" },
+      { error: "Internal Server Error", details: error.message },
       { status: 500 },
     );
   }

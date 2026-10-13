@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { prisma } from "@/lib/prisma";
 
 export async function GET(request, { params }) {
@@ -41,6 +42,9 @@ export async function PUT(request, { params }) {
       },
     });
 
+    // Data berubah -> hapus cache daftar brand
+    revalidateTag("brands");
+
     return NextResponse.json(
       { message: "Brand diperbarui", data: updatedBrand },
       { status: 200 },
@@ -61,6 +65,9 @@ export async function DELETE(request, { params }) {
     await prisma.brands.delete({
       where: { id: brandId },
     });
+
+    // Brand terhapus -> hapus cache daftar brand
+    revalidateTag("brands");
 
     return NextResponse.json(
       { message: "Brand berhasil dihapus" },

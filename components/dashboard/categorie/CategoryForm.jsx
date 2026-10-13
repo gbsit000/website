@@ -26,7 +26,7 @@ export default function CategoryForm({ initialData, onSuccess }) {
               uid: "-1",
               name: initialData.image,
               status: "done",
-              url: `${process.env.NEXT_PUBLIC_IMAGE_BASE_URL}/categorie/${initialData.id}/${initialData.image}`,
+              url: initialData.image,
             },
           ]);
         }
@@ -69,6 +69,7 @@ export default function CategoryForm({ initialData, onSuccess }) {
         message.success(
           `Kategori berhasil ${isEditMode ? "diperbarui" : "dibuat"}!`,
         );
+        onSuccess();
       } else {
         setValidation(result.error);
 
