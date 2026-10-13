@@ -3,12 +3,23 @@ import { revalidateTag, unstable_cache } from "next/cache";
 import { prisma } from "@/lib/prisma";
 
 // Query daftar brand (dipisah supaya bisa dibungkus cache)
-async function fetchBrands({ query, page, limit }) {
-  const skip = (page - 1) * limit;
-
+async function fetchBrands({ query, page, limit, all }) {
   const whereCondition = {
     name: { contains: query },
   };
+
+  // Mode "all": ambil SEMUA brand tanpa pagination (untuk dropdown / select).
+  // Hanya id & name yang diambil agar response ringan.
+  if (all) {
+    const data = await prisma.brands.findMany({
+      where: whereCondition,
+      select: { id: true, name: true },
+      orderBy: { name: "asc" },
+    });
+    return { data, total: data.length };
+  }
+
+  const skip = (page - 1) * limit;
 
   const [brands, total] = await prisma.$transaction([
     prisma.brands.findMany({
@@ -38,8 +49,9 @@ export async function GET(request) {
     const query = searchParams.get("q") || "";
     const page = parseInt(searchParams.get("page")) || 1;
     const limit = parseInt(searchParams.get("limit")) || 10;
+    const all = searchParams.get("all") === "true"; // /api/brands?all=true
 
-    const params = { query, page, limit };
+    const params = { query, page, limit, all };
 
     // Pencarian selalu ambil data langsung (kata kuncinya terlalu beragam).
     // Daftar tanpa pencarian (mis. dropdown brand) dilayani dari cache.

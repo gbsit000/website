@@ -36,7 +36,7 @@ const EditProductForm = ({ initialValues }) => {
   // --- FUNGSI FETCH DATA BRAND & KATEGORI ---
   const getAllBrands = async () => {
     try {
-      const response = await fetch("/api/brands");
+      const response = await fetch("/api/brands?all=true");
       if (!response.ok) throw new Error("Gagal mengambil data brand");
       const { data } = await response.json();
       return data;
@@ -48,7 +48,7 @@ const EditProductForm = ({ initialValues }) => {
 
   const getAllCategories = async () => {
     try {
-      const response = await fetch("/api/categories");
+      const response = await fetch("/api/categories?all=true");
       if (!response.ok) throw new Error("Gagal mengambil data kategori");
       const { data } = await response.json();
       return data;
