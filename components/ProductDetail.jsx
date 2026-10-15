@@ -115,8 +115,8 @@ export default function ProductDetail({ product }) {
             {/* Spesifikasi Kunci / Tombol WhatsApp */}
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <a
-                href={`https://wa.me/?text=${encodeURIComponent(
-                  `Halo, saya tertarik dengan produk ${product?.name || ""}`,
+                href={`https://wa.me/send?phone=6281310180668&text=${encodeURIComponent(
+                  `Halo, apa produk ${product?.name || ""} ready stok?`,
                 )}`}
                 target="_blank"
                 rel="noopener noreferrer"

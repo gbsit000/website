@@ -1,7 +1,13 @@
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 
-export default async function Footer() {
+async function getDetailCompany() {
+  const company = await prisma.abouts.findMany({
+    orderBy: { createdAt: "desc" },
+  });
+  return company;
+}
+async function getEmployess() {
   const employees = await prisma.employees.findMany({
     where: {
       published: true,
@@ -9,6 +15,13 @@ export default async function Footer() {
     orderBy: { id: "desc" },
     include: { roleData: true }, // Menarik relasi nama role
   });
+  return employees;
+}
+export default async function Footer() {
+  const [company, employees] = await Promise.all([
+    getDetailCompany(),
+    getEmployess(),
+  ]);
 
   return (
     <footer className="border-t border-gray-800 bg-gray-900 text-gray-300">
@@ -17,16 +30,19 @@ export default async function Footer() {
           {/* Kolom 1: Profil Perusahaan */}
           <div className="space-y-4">
             <div className="flex items-center gap-2">
-              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 font-bold text-white">
-                P
-              </span>
-              <span className="text-xl font-bold text-white">
+              <p className="text-xl font-bold text-white">
                 TRIPLE RICH PRODUCTION
-              </span>
+              </p>
+              <span></span>
             </div>
-            <p className="text-xs leading-relaxed text-gray-400">
-              Penyedia solusi kebutuhan produk industri berkualitas tinggi
-              dengan layanan cepat dan terpercaya.
+            <p className="text-sm text-white font-semibold">
+              {company[0].address}
+            </p>
+            <p className="text-sm text-white font-semibold">
+              {company[0].email}
+            </p>
+            <p className="text-sm text-white font-semibold">
+              {company[0].phone}
             </p>
           </div>
 
