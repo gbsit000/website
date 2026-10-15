@@ -225,6 +225,7 @@ const CreateProductForm = () => {
         hasFeedback
       >
         <Upload
+          multiple
           name="images"
           listType="picture-card"
           fileList={fileList}

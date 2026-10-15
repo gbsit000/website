@@ -275,6 +275,7 @@ const EditProductForm = ({ initialValues }) => {
         validateStatus={validate?.images && "error"}
       >
         <Upload
+          multiple
           listType="picture-card"
           fileList={fileList}
           beforeUpload={() => false}
