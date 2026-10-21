@@ -3,14 +3,14 @@
 import React, { useState, useEffect } from "react";
 import {
   Table,
-  Tag,
   Button,
   Space,
   Popconfirm,
   message,
-  Input,
   Flex,
   Card,
+  Input,
+  Switch,
 } from "antd";
 import {
   EditOutlined,
@@ -32,6 +32,35 @@ export default function Page() {
       total: 0,
     },
   });
+
+  const [togglingId, setTogglingId] = useState(null);
+
+  const handleTogglePublished = async (productId, checked) => {
+    setTogglingId(productId);
+    try {
+      const response = await fetch(`/api/products/${productId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ published: checked }),
+      });
+
+      if (!response.ok) throw new Error();
+
+      // Update state lokal tanpa fetch ulang seluruh tabel
+      setProducts((prev) =>
+        prev.map((p) =>
+          p.id === productId ? { ...p, published: checked } : p,
+        ),
+      );
+      message.success(
+        `Produk berhasil ${checked ? "diaktifkan" : "dinonaktifkan"}`,
+      );
+    } catch (error) {
+      message.error("Gagal mengubah status produk");
+    } finally {
+      setTogglingId(null);
+    }
+  };
 
   // KOREKSI 1: Ubah urutan parameter menjadi (query, page, limit) agar sesuai dengan cara Anda memanggilnya di bawah
   const fetchProducts = async (query = "", page = 1, limit = 10) => {
@@ -111,10 +140,15 @@ export default function Page() {
       title: "Status",
       dataIndex: "published",
       key: "published",
-      render: (published) => (
-        <Tag color={published ? "green" : "volcano"}>
-          {published ? "Published" : "Draft"}
-        </Tag>
+      align: "center",
+      render: (published, record) => (
+        <Switch
+          checked={published}
+          loading={togglingId === record.id}
+          checkedChildren="Aktif"
+          unCheckedChildren="Nonaktif"
+          onChange={(checked) => handleTogglePublished(record.id, checked)}
+        />
       ),
     },
     {

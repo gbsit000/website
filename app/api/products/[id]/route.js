@@ -254,3 +254,51 @@ export async function DELETE(request, { params }) {
     );
   }
 }
+
+export async function PATCH(request, { params }) {
+  try {
+    const { id } = await params;
+    const productId = parseInt(id);
+
+    if (isNaN(productId)) {
+      return NextResponse.json(
+        { error: "ID Produk tidak valid" },
+        { status: 400 },
+      );
+    }
+
+    const { published } = await request.json();
+
+    if (typeof published !== "boolean") {
+      return NextResponse.json(
+        { error: "Field 'published' harus berupa boolean" },
+        { status: 422 },
+      );
+    }
+
+    const updatedProduct = await prisma.products.update({
+      where: { id: productId },
+      data: { published },
+      select: { id: true, published: true },
+    });
+
+    revalidateTag("products");
+
+    return NextResponse.json(
+      { message: "Sukses", data: updatedProduct },
+      { status: 200 },
+    );
+  } catch (error) {
+    // P2025 = record tidak ditemukan di Prisma
+    if (error.code === "P2025") {
+      return NextResponse.json(
+        { error: "Produk tidak ditemukan" },
+        { status: 404 },
+      );
+    }
+    return NextResponse.json(
+      { error: error.message || error },
+      { status: 500 },
+    );
+  }
+}
