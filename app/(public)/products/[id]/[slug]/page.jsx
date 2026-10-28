@@ -1,5 +1,6 @@
 import ProductDetail from "@/components/ProductDetail";
 import prisma from "@/lib/prisma"; // 1. Import Prisma Client Anda
+import Custom404 from "@/pages/404";
 export async function generateMetadata({ params }) {
   const { id } = await params;
 
@@ -45,6 +46,7 @@ export default async function ProductDetailPage({ params }) {
   const product = await prisma.products.findUnique({
     where: {
       id: parseInt(id),
+      published: true,
     },
     include: {
       images: {
@@ -55,6 +57,9 @@ export default async function ProductDetailPage({ params }) {
       },
     },
   });
+  if (!product) {
+    return <Custom404 />;
+  }
 
   return (
     <main className="bg-white py-6">
