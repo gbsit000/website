@@ -3,8 +3,6 @@ import Custom404 from "@/app/404";
 import ProductDetail from "@/components/ProductDetail";
 import prisma from "@/lib/prisma";
 
-// Satu sumber data untuk generateMetadata dan page.
-// cache() membuat query hanya jalan sekali per request.
 const getPublishedProduct = cache(async (id) => {
   const productId = Number(id);
   if (!Number.isInteger(productId) || productId <= 0) return null;
