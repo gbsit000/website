@@ -1,6 +1,6 @@
 import ProductDetail from "@/components/ProductDetail";
 import prisma from "@/lib/prisma"; // 1. Import Prisma Client Anda
-import Custom404 from "@/pages/404";
+import Custom404 from "@/app/404";
 export async function generateMetadata({ params }) {
   const { id } = await params;
 
