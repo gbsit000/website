@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
+import { Image } from "antd";
 import DOMPurify from "isomorphic-dompurify";
+
+const FALLBACK_IMAGE = "/600x400.svg";
 
 export default function ProductDetail({ product }) {
   const htmlBersih = DOMPurify.sanitize(product?.description || "");
@@ -24,15 +26,18 @@ export default function ProductDetail({ product }) {
 
   // Helper untuk menentukan URL gambar yang valid (Cloudinary vs File Lokal)
   const getImageUrl = (imgObj) => {
-    if (!imgObj) return "/600x400.svg";
+    if (!imgObj) return FALLBACK_IMAGE;
 
     const imageName = typeof imgObj === "object" ? imgObj.name : imgObj;
-    if (!imageName) return "/600x400.svg";
+    if (!imageName) return FALLBACK_IMAGE;
 
-    // 1. Jika URL Cloudinary / Hosting (http/https)
+    // Jika URL Cloudinary / Hosting (http/https)
     if (imageName.startsWith("http://") || imageName.startsWith("https://")) {
       return imageName;
     }
+
+    // Jika bukan URL penuh, pakai fallback agar src tidak undefined
+    return FALLBACK_IMAGE;
   };
 
   return (
@@ -47,10 +52,13 @@ export default function ProductDetail({ product }) {
               <Image
                 src={getImageUrl(selectedImage)}
                 alt={product?.name || "Gambar Produk"}
-                fill
-                priority
-                sizes="(max-width: 1024px) 100vw, 50vw"
-                className="object-cover object-center"
+                width="100%"
+                height="100%"
+                fallback={FALLBACK_IMAGE}
+                rootClassName="!block h-full w-full"
+                style={{ objectFit: "cover", objectPosition: "center" }}
+                // Klik gambar untuk memperbesar (preview bawaan antd)
+                preview={{ mask: "Perbesar" }}
               />
             ) : (
               <div className="flex h-full items-center justify-center text-gray-400">
@@ -68,8 +76,9 @@ export default function ProductDetail({ product }) {
                 return (
                   <button
                     key={img.id || index}
+                    type="button"
                     onClick={() => setSelectedImage(img)}
-                    className={`relative aspect-square h-20 w-20 overflow-hidden rounded-lg border-2 transition-all ${
+                    className={`relative aspect-square h-20 w-20 shrink-0 overflow-hidden rounded-lg border-2 transition-all ${
                       isSelected
                         ? "border-blue-600 ring-2 ring-blue-600/20"
                         : "border-gray-200 opacity-70 hover:opacity-100"
@@ -78,9 +87,13 @@ export default function ProductDetail({ product }) {
                     <Image
                       src={getImageUrl(img)}
                       alt={`${product?.name || "Produk"} thumbnail ${index + 1}`}
-                      fill
-                      sizes="80px"
-                      className="object-cover"
+                      width="100%"
+                      height="100%"
+                      fallback={FALLBACK_IMAGE}
+                      rootClassName="!block h-full w-full"
+                      style={{ objectFit: "cover" }}
+                      // Thumbnail hanya untuk memilih gambar, bukan preview
+                      preview={false}
                     />
                   </button>
                 );
