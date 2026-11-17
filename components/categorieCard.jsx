@@ -35,7 +35,7 @@ export default async function CategorieCard() {
         {data.map((category) => {
           // Buat variabel helper untuk menentukan URL gambar yang valid
           const getImageUrl = (image, id) => {
-            if (!image) return "/placeholder.png"; // Fallback jika image null/kosong
+            if (!image) return "/placeholder.webp"; // Fallback jika image null/kosong
             if (image.startsWith("http://") || image.startsWith("https://")) {
               return image; // Jika URL Cloudinary
             }

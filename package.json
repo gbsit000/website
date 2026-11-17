@@ -5,7 +5,7 @@
   "scripts": {
     "postinstall": "prisma generate",
     "dev": "next dev",
-    "build": "next build --webpack",
+    "build": "next build",
     "start": "next start",
     "lint": "eslint"
   },
@@ -22,16 +22,16 @@
     "dotenv": "^17.4.2",
     "isomorphic-dompurify": "^3.19.0",
     "joi": "^18.2.9",
-    "next": "^16.3.8",
+    "next": "^16.4.6",
     "next-auth": "^4.24.15",
-    "react": "19.2.8",
-    "react-dom": "19.2.8"
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@tailwindcss/typography": "^0.5.4",
-    "eslint": "^8",
-    "eslint-config-next": "^14.2.35",
+    "eslint": "^9",
+    "eslint-config-next": "^16.4.6",
     "prisma": "^6.19.3",
     "tailwindcss": "^4"
   },
