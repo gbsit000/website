@@ -5,7 +5,7 @@
   "scripts": {
     "postinstall": "prisma generate",
     "dev": "next dev",
-    "build": "next build --webpack",
+    "build": "next build NODE_OPTIONS=--max-old-space-size=4096 next --webpack",
     "start": "next start",
     "lint": "eslint"
   },
