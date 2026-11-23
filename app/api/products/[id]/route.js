@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
-import { revalidateTag } from "next/cache";
+import { revalidateTag, revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { productValidation } from "@/validation/productValidation";
 import { v2 as cloudinary } from "cloudinary";
-
+import { notFound } from "next/navigation";
 // Konfigurasi Cloudinary
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -50,7 +50,6 @@ export async function GET(request, { params }) {
         },
       },
     });
-
     if (!product) {
       return NextResponse.json(
         { error: "Produk tidak ditemukan" },
@@ -184,7 +183,7 @@ export async function PUT(request, { params }) {
 
     // Data produk berubah -> hapus cache daftar produk
     revalidateTag("products");
-
+    revalidatePath("/sitemap.xml");
     return NextResponse.json(
       { message: "Sukses", data: updatedProduct },
       { status: 200 },
@@ -242,7 +241,7 @@ export async function DELETE(request, { params }) {
 
     // Produk terhapus -> hapus cache daftar produk
     revalidateTag("products");
-
+    revalidatePath("/sitemap.xml");
     return NextResponse.json(
       { message: "Produk beserta semua gambarnya berhasil dihapus total!" },
       { status: 200 },
@@ -283,6 +282,7 @@ export async function PATCH(request, { params }) {
     });
 
     revalidateTag("products");
+    revalidatePath("/sitemap.xml");
 
     return NextResponse.json(
       { message: "Sukses", data: updatedProduct },

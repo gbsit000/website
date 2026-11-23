@@ -33,6 +33,7 @@ const EditProductForm = ({ initialValues }) => {
   const [select, setSelect] = useState({ brands: [], categories: [] }); // Set default object
   const [loading, setLoading] = useState(false);
   const [validate, setValidate] = useState([]);
+
   // --- FUNGSI FETCH DATA BRAND & KATEGORI ---
   const getAllBrands = async () => {
     try {
@@ -122,7 +123,6 @@ const EditProductForm = ({ initialValues }) => {
       }
     } catch (error) {
       console.log(error);
-
       message.error("Terjadi kesalahan sistem.");
     } finally {
       setLoading(false);

@@ -12,13 +12,17 @@ export default function Page() {
   const fetchProduct = async () => {
     setLoading(true);
     try {
-      // Panggil API Backend
       const response = await fetch(`/api/products/${id}`);
-      const { data } = await response.json();
-      // Set data produk
-      setProduct(data);
+      const result = await response.json();
+
+      if (!response.ok) {
+        // tangkap error dari API (400, 404, 500)
+        message.error(result.error);
+      }
+      setProduct(result.data);
     } catch (error) {
-      message.error("Gagal fetch data");
+      setProduct(null);
+      message.error(error.message || "Gagal fetch data");
     } finally {
       setLoading(false);
     }
