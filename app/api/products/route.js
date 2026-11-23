@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { revalidateTag, unstable_cache } from "next/cache";
+import { revalidateTag, unstable_cache, revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { productValidation } from "@/validation/productValidation";
 import { v2 as cloudinary } from "cloudinary";
@@ -183,7 +183,7 @@ export async function POST(request) {
 
     // Data berubah -> hapus cache daftar produk agar produk baru langsung muncul
     revalidateTag("products");
-
+    revalidatePath("/sitemap.xml");
     return NextResponse.json(
       { message: "Produk berhasil dibuat", data: newProduct },
       { status: 201 },
