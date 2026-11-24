@@ -1,7 +1,7 @@
 // pages/sitemap.xml.js
 import { prisma } from "../lib/prisma";
 
-const BASE_URL = "http://localhost:3000";
+const BASE_URL = "https://triplerichproduction.co.id";
 const slugify = (text) =>
   text
     .toLowerCase()
